@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PayProof
 
-## Getting Started
+**支払い実績が、あなたの信用になる。**
 
-First, run the development server:
+開示リワード型の電力与信プラットフォーム（MVP / デモ）。
+
+## 誰の・どんな課題を・どう解くのか
+
+### 電力小売事業者の課題
+クレジットカード業界（CIC）や通信業界（TCA不払者情報交換）と違い、電力業界には**未払い情報を共有する仕組みがありません**。そのため、未払いのまま他社へ乗り換える悪質ユーザーを契約時に見分けられず、貸倒コストは善良な全ユーザーの電気料金に転嫁されています。
+
+### ユーザーの課題
+真面目に払い続けてきた実績を**証明する手段がない**。滞納歴を疑われれば、予想料金3ヶ月分（数万円）の保証金を求められることもあります。
+
+### PayProofの解き方
+> **開示にリワードを払うことで、開示しない者が自動的にリスクシグナルになる。**
+
+- ユーザーは契約時に、支払い履歴（銀行明細から検証）の開示を**任意で**選択できる
+- 無延滞が検証されれば、保証金免除などのリワードをその場で獲得
+- 開示できない（したくない）人には通常審査 — 強制的な情報共有機関なしに、ユーザーの自己選択だけでスクリーニングが成立する（逆選択の解消）
+
+## デモストーリー（30秒）
+
+引っ越してきたユーザーが、過去の支払い実績を**ワンタップで開示**し、その場で**保証金¥24,000が¥0に**。電力会社が信用証明を照会するたび、ユーザーにマイクロリワードが即時着金する（x402 / Base）。
+
+## 技術スタック
+
+- Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui
+- 信用証明: 署名付きクレデンシャル（JWS、簡易VC）※実装予定
+- 照会課金: [x402](https://www.x402.org/) + Base Sepolia USDC ※実装予定
+- 銀行連携はデモ用モックデータ（実サービスでは電子決済等代行業者のAPIを想定）
+
+## セットアップ
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+http://localhost:3000 でLP、`/apply` で契約デモフローが動きます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ステータス
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2026-08-16 デモデーに向けて開発中。
 
-## Learn More
+- [x] W1: ユーザー開示フロー（申込→開示選択→検証→リワード）
+- [ ] W2: 信用証明の発行（JWS）＋電力会社ダッシュボード
+- [ ] W3: x402照会課金＋ユーザー還元
+- [ ] W4: E2E磨き込み・デモ動画
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
