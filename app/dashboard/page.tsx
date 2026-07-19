@@ -18,6 +18,7 @@ import {
 import { personas } from "@/lib/mock-bank";
 import { scorePayments, DEFAULT_DEPOSIT } from "@/lib/scoring";
 import { issueCredential, verifyCredential } from "@/lib/credential";
+import { InquiryDemo } from "@/components/inquiry-demo";
 
 // 電力会社側ダッシュボード（デモ）
 // 申込者一覧: 開示者はスコアと署名検証済みの証明、非開示者は保証金ポリシー適用
@@ -129,6 +130,8 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
+      <InquiryDemo />
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">仕組み</CardTitle>
@@ -144,7 +147,8 @@ export default async function DashboardPage() {
             </span>
           </p>
           <p className="font-mono text-xs pt-2">
-            W3実装予定: 証明の照会ごとにx402マイクロペイメント（照会$0.01 → 一部をユーザーへ即時還元）
+            ・証明の照会ごとにx402マイクロペイメントが発生（照会$0.01 →
+            30%をユーザーへ即時還元）。上の「x402照会デモ」で体験できます。
           </p>
         </CardContent>
       </Card>
