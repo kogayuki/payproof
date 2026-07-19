@@ -16,7 +16,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { personas, type Persona } from "@/lib/mock-bank";
-import { scorePayments, DEFAULT_DEPOSIT, type ScoreResult } from "@/lib/scoring";
+import {
+  scorePayments,
+  DEFAULT_DEPOSIT,
+  TIER_INFO,
+  type ScoreResult,
+} from "@/lib/scoring";
 
 type Step = "form" | "consent" | "connect" | "verifying" | "result";
 
@@ -87,10 +92,9 @@ export default function ApplyPage() {
                 setStep("connect");
               }}
             >
-              <p className="font-semibold">開示して特典を受ける</p>
+              <p className="font-semibold">開示して優遇条件を受ける</p>
               <p className="text-sm text-muted-foreground">
-                無延滞が確認できた場合、保証金 ¥{DEFAULT_DEPOSIT.toLocaleString()}
-                が全額免除されます
+                実績に応じて保証金の全額免除・減額、審査即通過などの優遇が受けられます。履歴が短い方も実績構築プログラムの対象です
               </p>
             </button>
             <button
@@ -103,7 +107,8 @@ export default function ApplyPage() {
             >
               <p className="font-semibold">開示しない</p>
               <p className="text-sm text-muted-foreground">
-                通常の審査となり、保証金のお預かりが必要になる場合があります
+                標準初期条件（保証金 ¥{DEFAULT_DEPOSIT.toLocaleString()}
+                のお預かり）でのご契約となります。開示は後からでも選べます
               </p>
             </button>
             <p className="text-xs text-muted-foreground">
@@ -255,7 +260,7 @@ function ResultCard({
   persona: Persona | null;
   score: ScoreResult | null;
 }) {
-  // 非開示パターン
+  // 非開示 → 標準初期条件（ペナルティではない）
   if (!disclosed || !persona || !score) {
     return (
       <Card>
@@ -264,14 +269,16 @@ function ResultCard({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Alert>
-            <AlertTitle>保証金のお預かりが必要です</AlertTitle>
+            <AlertTitle>標準初期条件でのご契約となります</AlertTitle>
             <AlertDescription>
-              お支払い実績を確認できないため、通常審査となります。ご契約には保証金
-              ¥{DEFAULT_DEPOSIT.toLocaleString()}（予想料金3ヶ月分）のお預かりが必要です。
+              お支払い実績を確認できないため、標準初期条件として保証金 ¥
+              {DEFAULT_DEPOSIT.toLocaleString()}
+              （予想料金3ヶ月分）のお預かりが必要です。
             </AlertDescription>
           </Alert>
           <p className="text-xs text-muted-foreground">
-            ※ 開示はいつでも選択できます。無延滞が確認できれば保証金は全額免除されます。
+            ※
+            開示は後からでも選択できます。実績が確認できれば、免除・減額などの優遇条件が適用されます。
           </p>
           <RestartButton />
         </CardContent>
@@ -279,22 +286,25 @@ function ResultCard({
     );
   }
 
-  // 開示 → 無延滞（善良ペルソナ）
-  if (score.verified) {
+  const info = TIER_INFO[score.tier];
+
+  // 開示 → Aランク（全額免除）
+  if (score.tier === "A") {
     return (
       <Card className="border-primary/50">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="font-mono">✓ 検証済み</Badge>
+            <Badge className="font-mono">✓ Aランク</Badge>
             <Badge variant="secondary" className="font-mono">
-              {score.months}ヶ月 延滞なし
+              {score.months}ヶ月の実績・遅延なし
             </Badge>
           </div>
           <CardTitle className="pt-2">
             おめでとうございます、{persona.name} 様
           </CardTitle>
           <CardDescription>
-            {score.months}ヶ月分の公共料金支払いを検証し、すべて期日内のお支払いを確認しました。
+            {score.months}
+            ヶ月分の公共料金支払いを検証し、すべて期日内のお支払いを確認しました。審査は即時通過です。
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -316,30 +326,93 @@ function ResultCard({
     );
   }
 
-  // 開示 → 延滞あり（延滞ペルソナ）
+  // 開示 → 実績構築中（thin-file: 履歴12ヶ月未満）
+  if (score.tier === "building") {
+    return (
+      <Card className="border-primary/30">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-mono">
+              実績構築中
+            </Badge>
+            <Badge variant="outline" className="font-mono">
+              {score.months}ヶ月の実績・遅延なし
+            </Badge>
+          </div>
+          <CardTitle className="pt-2">
+            実績構築プログラムが適用されました
+          </CardTitle>
+          <CardDescription>
+            履歴が12ヶ月に満たないため通常のティア判定はまだできませんが、履歴が短いことは落ち度ではありません。
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="rounded-lg bg-primary/10 p-6 text-center">
+            <p className="text-sm text-muted-foreground">ご契約時の保証金</p>
+            <p className="text-3xl font-bold tracking-tight">
+              <span className="text-muted-foreground line-through text-xl mr-3">
+                ¥{DEFAULT_DEPOSIT.toLocaleString()}
+              </span>
+              ¥0
+            </p>
+            <p className="text-sm text-primary pt-1">
+              口座振替のご登録を条件に、保証金なしでご契約いただけます
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            このまま期日内のお支払いを続けると、実績12ヶ月の時点でAランクが自動判定されます。
+          </p>
+          <ScoreDetail score={score} />
+          <CredentialBlock personaId={persona.id} />
+          <RestartButton />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 開示 → B/Cランク（遅延あり: 減額 or 標準条件。開示した分だけ条件は改善する）
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Badge variant="destructive" className="font-mono">
-            延滞 {score.lateCount} 回
+          <Badge variant="secondary" className="font-mono">
+            {info.label}
+          </Badge>
+          <Badge variant="outline" className="font-mono">
+            {score.months}ヶ月の実績
           </Badge>
         </div>
         <CardTitle className="pt-2">お申し込みを受け付けました</CardTitle>
-        <CardDescription>
-          お支払い実績を確認しましたが、リワードの適用基準を満たしませんでした。
-        </CardDescription>
+        <CardDescription>{info.note}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <Alert variant="destructive">
-          <AlertTitle>保証金のお預かりが必要です</AlertTitle>
-          <AlertDescription>
-            直近{score.months}ヶ月で{score.lateCount}回の延滞（最長
-            {score.maxDaysLate}日）が確認されたため、保証金 ¥
-            {DEFAULT_DEPOSIT.toLocaleString()} のお預かりが必要です。
-          </AlertDescription>
-        </Alert>
+        {score.tier === "B" ? (
+          <div className="rounded-lg bg-primary/10 p-6 text-center">
+            <p className="text-sm text-muted-foreground">ご契約時の保証金</p>
+            <p className="text-3xl font-bold tracking-tight">
+              <span className="text-muted-foreground line-through text-xl mr-3">
+                ¥{DEFAULT_DEPOSIT.toLocaleString()}
+              </span>
+              ¥{score.deposit.toLocaleString()}
+            </p>
+            <p className="text-sm text-primary pt-1">
+              実績の開示により半額に減額されました
+            </p>
+          </div>
+        ) : (
+          <Alert>
+            <AlertTitle>標準初期条件でのご契約となります</AlertTitle>
+            <AlertDescription>
+              保証金 ¥{score.deposit.toLocaleString()} のお預かりが必要です。
+            </AlertDescription>
+          </Alert>
+        )}
+        <p className="text-xs text-muted-foreground">
+          ※
+          遅延の詳細（回数・日数）は下記のとおりご本人にのみ表示され、電力会社にはティアのみが共有されます。今後12ヶ月遅延がなければAランクに更新されます。
+        </p>
         <ScoreDetail score={score} />
+        <CredentialBlock personaId={persona.id} />
         <RestartButton />
       </CardContent>
     </Card>

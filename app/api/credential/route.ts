@@ -18,9 +18,8 @@ export async function POST(request: Request) {
     jws,
     claims: {
       sub: persona.name,
+      tier: score.tier,
       months: score.months,
-      onTimeCount: score.onTimeCount,
-      lateCount: score.lateCount,
       verified: score.verified,
     },
   });

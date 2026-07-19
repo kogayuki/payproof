@@ -1,7 +1,7 @@
 // 信用証明（簡易VC）の発行・検証
 // MVP: サーバー秘密鍵によるJWS(HS256)。本番ではDID/VC-JWT + 非対称鍵に置き換える。
 import { SignJWT, jwtVerify, decodeJwt } from "jose";
-import type { ScoreResult } from "./scoring";
+import type { ScoreResult, Tier } from "./scoring";
 
 const secret = new TextEncoder().encode(
   process.env.CREDENTIAL_SECRET ?? "payproof-demo-secret-do-not-use-in-prod"
@@ -9,12 +9,13 @@ const secret = new TextEncoder().encode(
 
 export const ISSUER = "https://payproof.example/issuer";
 
+// 証明に載せるのはティアと実績月数のみ。
+// 生の延滞回数・日数は本人の画面にだけ表示し、事業者へは渡さない（将来のZKP方針と整合）。
 export type CredentialClaims = {
   sub: string; // 被証明者（デモではペルソナ名）
+  tier: Tier;
   months: number;
-  onTimeCount: number;
-  lateCount: number;
-  verified: boolean; // 無延滞証明
+  verified: boolean; // 実績を検証できたか
   iss: string;
   iat?: number;
   exp?: number;
@@ -25,9 +26,8 @@ export async function issueCredential(
   score: ScoreResult
 ): Promise<string> {
   return new SignJWT({
+    tier: score.tier,
     months: score.months,
-    onTimeCount: score.onTimeCount,
-    lateCount: score.lateCount,
     verified: score.verified,
   })
     .setProtectedHeader({ alg: "HS256", typ: "vc+jwt" })

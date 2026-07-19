@@ -16,12 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { personas } from "@/lib/mock-bank";
-import { scorePayments, DEFAULT_DEPOSIT } from "@/lib/scoring";
+import { scorePayments, TIER_INFO, DEFAULT_DEPOSIT } from "@/lib/scoring";
 import { issueCredential, verifyCredential } from "@/lib/credential";
 import { InquiryDemo } from "@/components/inquiry-demo";
 
 // 電力会社側ダッシュボード（デモ）
-// 申込者一覧: 開示者はスコアと署名検証済みの証明、非開示者は保証金ポリシー適用
+// 事業者に見えるのは「ティア」と「署名検証結果」のみ。
+// 生の延滞回数・日数は本人にしか表示しない（将来のZKP方針と整合）。
 export default async function DashboardPage() {
   const disclosed = await Promise.all(
     personas.map(async (p) => {
@@ -47,7 +48,7 @@ export default async function DashboardPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">新規申込者の与信状況</h1>
         <p className="text-sm text-muted-foreground pt-1">
-          デンリョク電気 — 本日の申込 3件
+          デンリョク電気 — 本日の申込 4件
         </p>
       </div>
 
@@ -55,7 +56,7 @@ export default async function DashboardPage() {
         <CardHeader>
           <CardTitle className="text-base">申込者一覧</CardTitle>
           <CardDescription>
-            開示者は検証済みの支払い実績を確認できます。非開示者には保証金ポリシーが適用されます。
+            事業者に共有されるのは検証済みの与信ティアのみ。明細や遅延の詳細が共有されることはありません。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -64,50 +65,57 @@ export default async function DashboardPage() {
               <TableRow>
                 <TableHead>申込者</TableHead>
                 <TableHead>開示</TableHead>
-                <TableHead>支払い実績</TableHead>
-                <TableHead>証明の署名</TableHead>
-                <TableHead className="text-right">保証金</TableHead>
+                <TableHead>与信ティア</TableHead>
+                <TableHead>証明</TableHead>
+                <TableHead className="text-right">初期条件（保証金）</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {disclosed.map(({ persona, score, signatureValid }) => (
-                <TableRow key={persona.id}>
-                  <TableCell className="font-medium">{persona.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="font-mono text-xs">
-                      開示済み
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {score.verified ? (
-                      <span className="text-sm">
-                        {score.months}ヶ月 延滞なし
-                      </span>
-                    ) : (
-                      <span className="text-sm text-destructive">
-                        延滞{score.lateCount}回（最長{score.maxDaysLate}日）
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {signatureValid ? (
-                      <Badge className="font-mono text-xs">✓ 検証済み</Badge>
-                    ) : (
-                      <Badge variant="destructive" className="font-mono text-xs">
-                        無効
+              {disclosed.map(({ persona, score, signatureValid }) => {
+                const info = TIER_INFO[score.tier];
+                return (
+                  <TableRow key={persona.id}>
+                    <TableCell className="font-medium">{persona.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        開示済み
                       </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {score.verified ? (
-                      <span className="text-primary">¥0（免除）</span>
-                    ) : (
-                      <>¥{DEFAULT_DEPOSIT.toLocaleString()}</>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {/* 非開示の申込者 */}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        <Badge
+                          variant={score.tier === "A" ? "default" : "secondary"}
+                          className="font-mono text-xs w-fit"
+                        >
+                          {info.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          実績 {score.months}ヶ月
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {signatureValid ? (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          ✓ 署名有効
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive" className="font-mono text-xs">
+                          無効
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-mono">
+                      {score.deposit === 0 ? (
+                        <span className="text-primary">¥0（免除）</span>
+                      ) : (
+                        <>¥{score.deposit.toLocaleString()}</>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {/* 非開示の申込者 — ペナルティではなく標準初期条件の適用 */}
               <TableRow>
                 <TableCell className="font-medium">松田 三郎</TableCell>
                 <TableCell>
@@ -116,13 +124,18 @@ export default async function DashboardPage() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-muted-foreground">確認不可</span>
+                  <span className="text-sm text-muted-foreground">
+                    確認不可
+                  </span>
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-muted-foreground">—</span>
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   ¥{DEFAULT_DEPOSIT.toLocaleString()}
+                  <span className="block text-xs text-muted-foreground">
+                    標準初期条件
+                  </span>
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -138,17 +151,24 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground flex flex-col gap-2">
           <p>
-            ・開示者の支払い実績は、本人の銀行明細から検証され、発行者の署名付き証明（JWS）として提示されます。
+            ・開示者の与信ティアは、本人の銀行明細から検証され、発行者の署名付き証明（JWS）として提示されます。事業者が受け取るのはティアのみで、明細や遅延の詳細は本人の元に残ります。
           </p>
           <p>
-            ・非開示は本人の自由ですが、実績を確認できないため保証金ポリシーが適用されます。
+            ・保証金はペナルティではなく、
             <span className="text-foreground">
-              開示にリワードがあることで、開示しないこと自体がリスクシグナルになります。
+              実績を確認できない相手に対する標準初期条件
             </span>
+            です。開示すれば全員に条件改善の可能性があり（免除・半額・実績構築プログラム）、
+            結果として開示が合理的な選択になります。
+          </p>
+          <p>
+            ・履歴が12ヶ月に満たない方（新社会人・引っ越し直後など）は「実績構築中」として扱われ、
+            保証金なしで契約できます。履歴が薄いことは落ち度ではありません。
           </p>
           <p className="font-mono text-xs pt-2">
-            ・証明の照会ごとにx402マイクロペイメントが発生（照会$0.01 →
-            30%をユーザーへ即時還元）。上の「x402照会デモ」で体験できます。
+            ・照会課金レール: 証明1件の照会ごとに $0.01。決済手段は差し替え可能で、
+            現在はx402（HTTP 402マイクロペイメント）で実装。照会料の30%は貸倒削減分を原資として
+            データ主であるユーザーへ還元。上の「照会デモ」で体験できます。
           </p>
         </CardContent>
       </Card>

@@ -29,12 +29,13 @@ async function handler(request: NextRequest): Promise<NextResponse> {
   const jws = await issueCredential(persona.name, score);
   const { valid } = await verifyCredential(jws);
 
+  // 照会者（事業者）に返すのはティアと実績月数のみ。生の遅延データは返さない
   return NextResponse.json({
     subject: persona.name,
     issuer: ISSUER,
+    tier: score.tier,
     verified: score.verified,
     months: score.months,
-    lateCount: score.lateCount,
     signatureValid: valid,
     jws,
     x402: { protected: x402Enabled, price: INQUIRY_PRICE, network: NETWORK },

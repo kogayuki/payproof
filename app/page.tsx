@@ -16,10 +16,10 @@ export default function Home() {
           あなたの信用になる。
         </h1>
         <p className="text-muted-foreground max-w-xl leading-relaxed">
-          電力業界には、クレカや通信のような未払い情報の共有機関がありません。
-          真面目に払ってきた人も、踏み倒す人も、契約時には区別できない——
+          電力業界には、クレカや通信のような支払い情報の共有機関がありません。
+          何年も期日内に払い続けた実績があっても、契約時にそれを証明する手段がない——
           PayProofは、あなた自身が支払い履歴を開示することで、
-          保証金免除などのリワードをその場で受け取れる仕組みです。
+          保証金免除や審査即通過などの優遇をその場で受け取れる仕組みです。
         </p>
         <Button size="lg" render={<Link href="/apply" />}>
           電力契約デモをはじめる →
@@ -48,7 +48,7 @@ export default function Home() {
             <CardTitle className="text-base">3. その場でリワード</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            無延滞が証明されれば、保証金（3ヶ月分・数万円）が即座に免除されます。
+            実績に応じて保証金（3ヶ月分・数万円）の免除・減額や審査即通過が即時適用。履歴が短い方も実績構築プログラムの対象です。
           </CardContent>
         </Card>
       </section>

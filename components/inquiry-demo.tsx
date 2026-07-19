@@ -23,11 +23,18 @@ type DemoResult = {
   payment: unknown;
   data: {
     subject: string;
+    tier: "A" | "B" | "C" | "building";
     verified: boolean;
     months: number;
-    lateCount: number;
     signatureValid: boolean;
   };
+};
+
+const TIER_LABEL: Record<DemoResult["data"]["tier"], string> = {
+  A: "Aランク",
+  B: "Bランク",
+  C: "Cランク",
+  building: "実績構築中",
 };
 
 type Phase = "idle" | "request" | "pay" | "fetch" | "done" | "error";
@@ -79,7 +86,7 @@ export function InquiryDemo() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">x402 照会デモ</CardTitle>
+          <CardTitle className="text-base">照会デモ（照会課金レール）</CardTitle>
           {result && (
             <Badge
               variant={result.mode === "live" ? "default" : "outline"}
@@ -90,14 +97,16 @@ export function InquiryDemo() {
           )}
         </div>
         <CardDescription>
-          電力会社が証明を1件照会するたびに $0.01 のマイクロペイメントが発生し、
-          その{Math.round(0.3 * 100)}%がデータ主であるユーザーへ即時還元されます。
+          電力会社が証明を1件照会するたびに $0.01 の照会料が発生し、その30%が
+          データ主であるユーザーへ即時還元されます（原資は貸倒削減分）。
+          決済手段は差し替え可能で、本デモではx402（HTTP
+          402マイクロペイメント）で実装しています。
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {phase === "idle" && (
           <Button onClick={run} className="self-start">
-            誠実 太郎さんの証明を照会する（$0.01）
+            佐藤 太郎さんの証明を照会する（$0.01）
           </Button>
         )}
 
@@ -129,9 +138,12 @@ export function InquiryDemo() {
         {phase === "done" && result && (
           <div className="flex flex-col gap-3 rounded-lg border p-4">
             <div className="flex items-center gap-2">
-              <Badge className="font-mono text-xs">✓ 署名検証済み</Badge>
+              <Badge className="font-mono text-xs">✓ 署名有効</Badge>
+              <Badge variant="secondary" className="font-mono text-xs">
+                {TIER_LABEL[result.data.tier]}
+              </Badge>
               <span className="text-sm font-medium">
-                {result.data.subject} — {result.data.months}ヶ月 延滞なし
+                {result.data.subject} — 実績{result.data.months}ヶ月
               </span>
             </div>
             <div className="grid gap-1 font-mono text-xs text-muted-foreground">
