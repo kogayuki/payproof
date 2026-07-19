@@ -6,13 +6,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { SectionPanel } from "@/components/section-panel";
 
 type DemoResult = {
   mode: "live" | "simulated";
@@ -83,27 +77,26 @@ export function InquiryDemo() {
     : "$0.003";
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">照会デモ（照会課金レール）</CardTitle>
-          {result && (
-            <Badge
-              variant={result.mode === "live" ? "default" : "outline"}
-              className="font-mono text-xs"
-            >
-              {result.mode === "live" ? "on-chain 決済" : "シミュレーション"}
-            </Badge>
-          )}
-        </div>
-        <CardDescription>
-          電力会社が証明を1件照会するたびに $0.01 の照会料が発生し、その30%が
-          データ主であるユーザーへ即時還元されます（原資は貸倒削減分）。
-          決済手段は差し替え可能で、本デモではx402（HTTP
-          402マイクロペイメント）で実装しています。
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <SectionPanel
+      title="照会デモ（照会課金レール）"
+      actions={
+        result && (
+          <Badge
+            variant={result.mode === "live" ? "default" : "outline"}
+            className="font-mono text-xs"
+          >
+            {result.mode === "live" ? "on-chain 決済" : "シミュレーション"}
+          </Badge>
+        )
+      }
+      bodyClassName="flex flex-col gap-4 p-4"
+    >
+      <p className="text-sm text-muted-foreground">
+        電力会社が証明を1件照会するたびに $0.01 の照会料が発生し、その30%が
+        データ主であるユーザーへ即時還元されます（原資は貸倒削減分）。
+        決済手段は差し替え可能で、本デモではx402（HTTP
+        402マイクロペイメント）で実装しています。
+      </p>
         {phase === "idle" && (
           <Button onClick={run} className="self-start">
             佐藤 太郎さんの証明を照会する（$0.01）
@@ -171,7 +164,6 @@ export function InquiryDemo() {
             </Button>
           </div>
         )}
-      </CardContent>
-    </Card>
+    </SectionPanel>
   );
 }

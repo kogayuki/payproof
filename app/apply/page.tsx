@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SectionPanel } from "@/components/section-panel";
 import {
   Card,
   CardContent,
@@ -36,16 +38,32 @@ export default function ApplyPage() {
   );
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-xl px-6 py-10 flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <Link href="/" className="font-mono text-sm text-muted-foreground">
-          ← PayProof
-        </Link>
-        <Badge variant="outline" className="font-mono">
-          電力契約デモ
-        </Badge>
-      </header>
+    <main className="flex-1 w-full flex flex-col">
+      {/* Sansan風パンくずバー */}
+      <div className="border-b border-border bg-card">
+        <div className="mx-auto flex h-11 w-full max-w-6xl items-center gap-1.5 px-4 text-sm">
+          <Link href="/" className="text-primary hover:underline">
+            デンリョク電気
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-primary">でんきの新規お申し込み</span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-foreground">
+            {step === "form"
+              ? "お客さま情報の入力"
+              : step === "consent"
+                ? "支払い実績の開示選択"
+                : step === "result"
+                  ? "お申し込み結果"
+                  : "支払い実績の検証"}
+          </span>
+          <Link href="/" className="ml-auto text-muted-foreground hover:text-foreground">
+            <X className="h-4.5 w-4.5" />
+          </Link>
+        </div>
+      </div>
 
+      <div className="mx-auto w-full max-w-xl px-4 py-8 flex flex-col gap-6">
       <StepIndicator step={step} />
 
       {step === "form" && (
@@ -156,6 +174,7 @@ export default function ApplyPage() {
       {step === "result" && (
         <ResultCard disclosed={disclosed} persona={persona} score={score} />
       )}
+      </div>
     </main>
   );
 }
@@ -420,21 +439,31 @@ function ResultCard({
 }
 
 function ScoreDetail({ score }: { score: ScoreResult }) {
+  // Sansan風: グレー見出し + key-value ゼブラ行
+  const rows: [string, string][] = [
+    ["検証期間", `${score.months}ヶ月`],
+    ["期日内支払い", `${score.onTimeCount}回`],
+    ["延滞（30日以上）", `${score.lateCount}回`],
+    ["判定ティア", TIER_INFO[score.tier].label],
+  ];
   return (
-    <div className="grid grid-cols-3 gap-2 text-center">
-      <div className="rounded-lg border border-border p-3">
-        <p className="text-xs text-muted-foreground">検証期間</p>
-        <p className="font-mono font-semibold">{score.months}ヶ月</p>
-      </div>
-      <div className="rounded-lg border border-border p-3">
-        <p className="text-xs text-muted-foreground">期日内支払い</p>
-        <p className="font-mono font-semibold">{score.onTimeCount}回</p>
-      </div>
-      <div className="rounded-lg border border-border p-3">
-        <p className="text-xs text-muted-foreground">延滞（30日以上）</p>
-        <p className="font-mono font-semibold">{score.lateCount}回</p>
-      </div>
-    </div>
+    <SectionPanel title="検証結果" count={rows.length}>
+      <dl>
+        {rows.map(([k, v], i) => (
+          <div
+            key={k}
+            className={`flex border-b border-border text-sm last:border-b-0 ${
+              i % 2 === 1 ? "bg-muted/40" : ""
+            }`}
+          >
+            <dt className="w-36 shrink-0 px-4 py-2.5 text-muted-foreground">
+              {k}
+            </dt>
+            <dd className="px-4 py-2.5 font-mono font-medium">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </SectionPanel>
   );
 }
 
@@ -460,13 +489,15 @@ function CredentialBlock({ personaId }: { personaId: string }) {
   }, [personaId]);
 
   return (
-    <div className="rounded-lg border border-border p-4 flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">あなたの信用証明（持ち運び可能）</p>
+    <SectionPanel
+      title="あなたの信用証明（持ち運び可能）"
+      actions={
         <Badge variant="secondary" className="font-mono text-xs">
           JWS / 簡易VC
         </Badge>
-      </div>
+      }
+      bodyClassName="flex flex-col gap-2 p-4"
+    >
       <p className="text-xs text-muted-foreground">
         この証明は発行者の署名付きです。他の電力会社・家賃・サブスクの審査でも提示できます（構想）。
       </p>
@@ -491,7 +522,7 @@ function CredentialBlock({ personaId }: { personaId: string }) {
           証明を発行しています…
         </p>
       )}
-    </div>
+    </SectionPanel>
   );
 }
 
