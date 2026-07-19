@@ -54,7 +54,10 @@ export default function Home() {
       </section>
 
       <p className="text-center text-xs text-muted-foreground font-mono">
-        demo build — 銀行連携はモックデータで再現しています
+        demo build — 銀行連携はモックデータで再現しています ／{" "}
+        <Link href="/dashboard" className="underline underline-offset-2">
+          電力会社側ダッシュボードを見る
+        </Link>
       </p>
     </main>
   );

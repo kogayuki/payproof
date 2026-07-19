@@ -309,6 +309,7 @@ function ResultCard({
             <p className="text-sm text-primary pt-1">全額免除されました</p>
           </div>
           <ScoreDetail score={score} />
+          <CredentialBlock personaId={persona.id} />
           <RestartButton />
         </CardContent>
       </Card>
@@ -360,6 +361,63 @@ function ScoreDetail({ score }: { score: ScoreResult }) {
         <p className="text-xs text-muted-foreground">延滞（30日以上）</p>
         <p className="font-mono font-semibold">{score.lateCount}回</p>
       </div>
+    </div>
+  );
+}
+
+function CredentialBlock({ personaId }: { personaId: string }) {
+  const [jws, setJws] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/credential", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ personaId }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (active && d.jws) setJws(d.jws);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [personaId]);
+
+  return (
+    <div className="rounded-lg border border-border p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">あなたの信用証明（持ち運び可能）</p>
+        <Badge variant="secondary" className="font-mono text-xs">
+          JWS / 簡易VC
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        この証明は発行者の署名付きです。他の電力会社・家賃・サブスクの審査でも提示できます（構想）。
+      </p>
+      {jws ? (
+        <>
+          <p className="font-mono text-xs break-all text-muted-foreground bg-muted rounded p-2 max-h-20 overflow-hidden">
+            {jws}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard.writeText(jws);
+              setCopied(true);
+            }}
+          >
+            {copied ? "コピーしました ✓" : "証明をコピー"}
+          </Button>
+        </>
+      ) : (
+        <p className="font-mono text-xs text-muted-foreground animate-pulse">
+          証明を発行しています…
+        </p>
+      )}
     </div>
   );
 }
