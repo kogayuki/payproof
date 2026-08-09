@@ -246,7 +246,9 @@ export default async function DashboardPage() {
         <p className="pt-2 font-mono text-xs">
           ・照会課金レール: 証明1件の照会ごとに 1 JPYC（円建てステーブルコイン）。
           x402（HTTP 402マイクロペイメント）で実装し、照会料の30%（0.3
-          JPYC）をデータ主であるユーザーへ即時還元。上の「照会デモ」で体験できます。
+          JPYC）をデータ主であるユーザーへ即時着金。狙いは収入ではなく、
+          「いつ・誰に照会されたか」が本人に届く通知・監査レシートとしての設計です。
+          上の「照会デモ」で体験できます。
         </p>
       </SectionPanel>
     </main>

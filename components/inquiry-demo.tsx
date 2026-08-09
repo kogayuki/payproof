@@ -94,7 +94,9 @@ export function InquiryDemo() {
     >
       <p className="text-sm text-muted-foreground">
         電力会社が証明を1件照会するたびに 1 JPYC（円建てステーブルコイン）の照会料が発生し、その30%が
-        データ主であるユーザーへ即時還元されます（原資は貸倒・督促コストの削減分）。
+        データ主であるユーザーへ即時着金します。金額の狙いは収入ではなく——
+        「自分のデータがいつ・誰に照会されたか」が着金という形で本人にリアルタイムに届く、
+        <span className="font-medium text-foreground">照会の通知・監査レシート</span>です。
         決済手段は差し替え可能で、本デモではx402（HTTP
         402マイクロペイメント）で実装しています。
       </p>
@@ -151,8 +153,8 @@ export function InquiryDemo() {
               </span>
             </div>
             <p className="text-xs text-muted-foreground">
-              自分の支払いデータが参照されるたびに、ユーザー自身が稼げる——
-              これがPayProofの目指す「データ主権型の与信」です。
+              照会されるたびに、通知と対価が本人へ届く——
+              共有DB型では不可能な「本人が照会を知る権利」の実装です。
             </p>
             <Button
               variant="outline"
