@@ -11,6 +11,12 @@ export const INQUIRY_PRICE = "$0.01";
 // 照会料のうちユーザーへ即時還元する割合（デモ演出用の表示値）
 export const USER_REBATE_RATIO = 0.3;
 
+// 表示は円建て（JPYC）。JPYCはEIP-3009準拠でx402互換だが、Baseには未展開のため
+// デモの実課金レールはBase Sepolia（simulated）のまま、UI表示のみJPYC建てにする。
+// 本番はJPYC対応チェーン（Ethereum / Polygon / Avalanche）で置き換え予定。
+export const INQUIRY_PRICE_JPYC = 1; // 1 JPYC（≒¥1）/ 照会
+export const USER_REBATE_JPYC = INQUIRY_PRICE_JPYC * USER_REBATE_RATIO; // 0.3 JPYC
+
 export const FACILITATOR_URL =
   process.env.X402_FACILITATOR_URL ?? "https://facilitator.x402.org";
 

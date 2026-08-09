@@ -18,12 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { personas, type Persona } from "@/lib/mock-bank";
-import {
-  scorePayments,
-  DEFAULT_DEPOSIT,
-  TIER_INFO,
-  type ScoreResult,
-} from "@/lib/scoring";
+import { scorePayments, TIER_INFO, type ScoreResult } from "@/lib/scoring";
 
 type Step = "form" | "consent" | "connect" | "verifying" | "result";
 
@@ -33,7 +28,7 @@ export default function ApplyPage() {
   const [persona, setPersona] = useState<Persona | null>(null);
 
   const score: ScoreResult | null = useMemo(
-    () => (persona ? scorePayments(persona.transactions) : null),
+    () => (persona ? scorePayments(persona.payments) : null),
     [persona]
   );
 
@@ -99,7 +94,7 @@ export default function ApplyPage() {
           <CardHeader>
             <CardTitle>支払い履歴を開示して、特典を受けますか？</CardTitle>
             <CardDescription>
-              過去の公共料金のお支払い実績を開示すると、審査が優遇されます。開示は完全に任意です。
+              前の電力会社でのお支払い実績を開示すると、電気料金の割引が受けられます。開示は完全に任意です。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -110,9 +105,9 @@ export default function ApplyPage() {
                 setStep("connect");
               }}
             >
-              <p className="font-semibold">開示して優遇条件を受ける</p>
+              <p className="font-semibold">開示して割引を受ける</p>
               <p className="text-sm text-muted-foreground">
-                実績に応じて保証金の全額免除・減額、審査即通過などの優遇が受けられます。履歴が短い方も実績構築プログラムの対象です
+                実績に応じて電気料金の割引（最大3%）がその場で適用されます。履歴が短い方も実績構築プログラムの対象です
               </p>
             </button>
             <button
@@ -125,12 +120,11 @@ export default function ApplyPage() {
             >
               <p className="font-semibold">開示しない</p>
               <p className="text-sm text-muted-foreground">
-                標準初期条件（保証金 ¥{DEFAULT_DEPOSIT.toLocaleString()}
-                のお預かり）でのご契約となります。開示は後からでも選べます
+                標準条件（割引なし）でのご契約となります。開示は後からでも選べます
               </p>
             </button>
             <p className="text-xs text-muted-foreground">
-              開示いただくのは「公共料金の支払い実績」のみです。明細の内容や残高が電力会社に共有されることはありません。
+              開示いただくのは「電気料金の支払い実績」のみです。使用量や生活パターンが新しい電力会社に共有されることはありません。
             </p>
           </CardContent>
         </Card>
@@ -139,9 +133,9 @@ export default function ApplyPage() {
       {step === "connect" && (
         <Card>
           <CardHeader>
-            <CardTitle>銀行口座と連携</CardTitle>
+            <CardTitle>前の電力会社に照会</CardTitle>
             <CardDescription>
-              デモ用のペルソナを選択してください。実サービスでは本人の銀行API連携（電子決済等代行）に置き換わります。
+              デモ用のペルソナを選択してください。実サービスでは本人同意に基づき、前の電力会社が保有する支払い履歴を照会します（相互参照）。
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -157,7 +151,7 @@ export default function ApplyPage() {
                 <div className="flex items-center justify-between">
                   <p className="font-semibold">{p.name}</p>
                   <Badge variant="secondary" className="font-mono text-xs">
-                    {p.bank}
+                    {p.prevProvider}
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{p.label}</p>
@@ -215,9 +209,9 @@ function StepIndicator({ step }: { step: Step }) {
 }
 
 const VERIFY_MESSAGES = [
-  "銀行口座に安全に接続しています…",
-  "入出金明細を取得しています…",
-  "公共料金の支払いを抽出しています…",
+  "ご本人の開示同意を確認しています…",
+  "前の電力会社に照会しています…",
+  "支払い履歴（署名付き）を受信しています…",
   "支払い実績を検証しています…",
 ];
 
@@ -229,7 +223,7 @@ function VerifyingCard({
   onDone: () => void;
 }) {
   const [messageIndex, setMessageIndex] = useState(0);
-  const utilityTxs = persona.transactions.filter((t) => t.isUtility);
+  const utilityTxs = persona.payments;
 
   useEffect(() => {
     if (messageIndex >= VERIFY_MESSAGES.length) {
@@ -247,7 +241,7 @@ function VerifyingCard({
           <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-primary" />
           支払い実績を検証中
         </CardTitle>
-        <CardDescription>{persona.bank} — {persona.name} 様</CardDescription>
+        <CardDescription>{persona.prevProvider} — {persona.name} 様</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 font-mono text-sm">
         {VERIFY_MESSAGES.slice(0, messageIndex + 1).map((m, i) => (
@@ -262,7 +256,7 @@ function VerifyingCard({
         ))}
         {messageIndex >= 2 && (
           <p className="text-xs text-muted-foreground pt-2">
-            電気料金の引き落とし {utilityTxs.length} 件を検出
+            電気料金の支払い記録 {utilityTxs.length} 件を受信
           </p>
         )}
       </CardContent>
@@ -288,16 +282,14 @@ function ResultCard({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <Alert>
-            <AlertTitle>標準初期条件でのご契約となります</AlertTitle>
+            <AlertTitle>標準条件（割引なし）でのご契約となります</AlertTitle>
             <AlertDescription>
-              お支払い実績を確認できないため、標準初期条件として保証金 ¥
-              {DEFAULT_DEPOSIT.toLocaleString()}
-              （予想料金3ヶ月分）のお預かりが必要です。
+              お支払い実績を確認できないため、電気料金は標準単価（割引なし）の適用となります。
             </AlertDescription>
           </Alert>
           <p className="text-xs text-muted-foreground">
             ※
-            開示は後からでも選択できます。実績が確認できれば、免除・減額などの優遇条件が適用されます。
+            開示は後からでも選択できます。実績が確認できれば、電気料金の割引（最大3%）が適用されます。
           </p>
           <RestartButton />
         </CardContent>
@@ -323,19 +315,16 @@ function ResultCard({
           </CardTitle>
           <CardDescription>
             {score.months}
-            ヶ月分の公共料金支払いを検証し、すべて期日内のお支払いを確認しました。審査は即時通過です。
+            ヶ月分の電気料金支払いを検証し、すべて期日内のお支払いを確認しました。
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="rounded-lg bg-primary/10 p-6 text-center">
-            <p className="text-sm text-muted-foreground">ご契約時の保証金</p>
-            <p className="text-3xl font-bold tracking-tight">
-              <span className="text-muted-foreground line-through text-xl mr-3">
-                ¥{DEFAULT_DEPOSIT.toLocaleString()}
-              </span>
-              ¥0
+            <p className="text-sm text-muted-foreground">電気料金の割引</p>
+            <p className="text-3xl font-bold tracking-tight">3%OFF</p>
+            <p className="text-sm text-primary pt-1">
+              開示特典として、ご契約のその場で適用されました
             </p>
-            <p className="text-sm text-primary pt-1">全額免除されました</p>
           </div>
           <ScoreDetail score={score} />
           <CredentialBlock personaId={persona.id} />
@@ -367,19 +356,14 @@ function ResultCard({
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="rounded-lg bg-primary/10 p-6 text-center">
-            <p className="text-sm text-muted-foreground">ご契約時の保証金</p>
-            <p className="text-3xl font-bold tracking-tight">
-              <span className="text-muted-foreground line-through text-xl mr-3">
-                ¥{DEFAULT_DEPOSIT.toLocaleString()}
-              </span>
-              ¥0
-            </p>
+            <p className="text-sm text-muted-foreground">ウェルカム特典</p>
+            <p className="text-3xl font-bold tracking-tight">初月1%OFF</p>
             <p className="text-sm text-primary pt-1">
-              口座振替のご登録を条件に、保証金なしでご契約いただけます
+              口座振替のご登録で適用されます
             </p>
           </div>
           <p className="text-xs text-muted-foreground">
-            このまま期日内のお支払いを続けると、実績12ヶ月の時点でAランクが自動判定されます。
+            このまま期日内のお支払いを続けると、実績12ヶ月の時点でAランク（3%割引）が自動判定されます。
           </p>
           <ScoreDetail score={score} />
           <CredentialBlock personaId={persona.id} />
@@ -407,22 +391,17 @@ function ResultCard({
       <CardContent className="flex flex-col gap-4">
         {score.tier === "B" ? (
           <div className="rounded-lg bg-primary/10 p-6 text-center">
-            <p className="text-sm text-muted-foreground">ご契約時の保証金</p>
-            <p className="text-3xl font-bold tracking-tight">
-              <span className="text-muted-foreground line-through text-xl mr-3">
-                ¥{DEFAULT_DEPOSIT.toLocaleString()}
-              </span>
-              ¥{score.deposit.toLocaleString()}
-            </p>
+            <p className="text-sm text-muted-foreground">電気料金の割引</p>
+            <p className="text-3xl font-bold tracking-tight">1%OFF</p>
             <p className="text-sm text-primary pt-1">
-              実績の開示により半額に減額されました
+              実績の開示により適用されました
             </p>
           </div>
         ) : (
           <Alert>
-            <AlertTitle>標準初期条件でのご契約となります</AlertTitle>
+            <AlertTitle>標準条件でのご契約となります</AlertTitle>
             <AlertDescription>
-              保証金 ¥{score.deposit.toLocaleString()} のお預かりが必要です。
+              今回の割引適用はありませんが、今後12ヶ月遅延がなければ割引対象になります。
             </AlertDescription>
           </Alert>
         )}

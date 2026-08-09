@@ -2,7 +2,8 @@
 
 // W3: x402 照会デモ (電力会社役)
 // ダッシュボードから /api/inquiry/demo を叩き、
-// 402 → USDC支払い → 証明取得 → ユーザー還元 の一連の流れを演出する。
+// 402 → 支払い → 証明取得 → ユーザー還元 の一連の流れを演出する。
+// 表示は円建て（JPYC）。実課金レールはBase Sepolia（simulated）— lib/x402.ts 参照。
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ type Phase = "idle" | "request" | "pay" | "fetch" | "done" | "error";
 
 const PHASE_STEPS: { key: Phase; label: string }[] = [
   { key: "request", label: "GET /api/inquiry → 402 Payment Required" },
-  { key: "pay", label: "USDC $0.01 を支払い (Base Sepolia)" },
+  { key: "pay", label: "1 JPYC を支払い（円建てステーブルコイン）" },
   { key: "fetch", label: "200 OK — 署名付き証明を取得" },
 ];
 
@@ -73,8 +74,8 @@ export function InquiryDemo() {
   const stepIndex =
     phase === "request" ? 0 : phase === "pay" ? 1 : phase === "fetch" ? 2 : 3;
   const rebate = result
-    ? `$${(0.01 * result.rebateRatio).toFixed(3)}`
-    : "$0.003";
+    ? `${(1 * result.rebateRatio).toFixed(1)} JPYC`
+    : "0.3 JPYC";
 
   return (
     <SectionPanel
@@ -92,14 +93,14 @@ export function InquiryDemo() {
       bodyClassName="flex flex-col gap-4 p-4"
     >
       <p className="text-sm text-muted-foreground">
-        電力会社が証明を1件照会するたびに $0.01 の照会料が発生し、その30%が
-        データ主であるユーザーへ即時還元されます（原資は貸倒削減分）。
+        電力会社が証明を1件照会するたびに 1 JPYC（円建てステーブルコイン）の照会料が発生し、その30%が
+        データ主であるユーザーへ即時還元されます（原資は貸倒・督促コストの削減分）。
         決済手段は差し替え可能で、本デモではx402（HTTP
         402マイクロペイメント）で実装しています。
       </p>
         {phase === "idle" && (
           <Button onClick={run} className="self-start">
-            佐藤 太郎さんの証明を照会する（$0.01）
+            佐藤 太郎さんの証明を照会する（1 JPYC）
           </Button>
         )}
 
@@ -140,8 +141,10 @@ export function InquiryDemo() {
               </span>
             </div>
             <div className="grid gap-1 font-mono text-xs text-muted-foreground">
-              <span>照会料: {result.price}（照会者: {result.payer.slice(0, 10)}…）</span>
-              <span>ネットワーク: {result.network}（Base Sepolia）</span>
+              <span>照会料: 1 JPYC（照会者: {result.payer.slice(0, 10)}…）</span>
+              <span>
+                レール: x402（デモは {result.network} / 本番はJPYC対応チェーン）
+              </span>
               <span className="text-primary">
                 → ユーザーへ {rebate} を即時還元
                 {result.mode === "simulated" && "（演出）"}

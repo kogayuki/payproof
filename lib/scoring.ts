@@ -3,42 +3,41 @@
 // 設計方針:
 // - 「人を評価する」のではなく「検証可能な事実からティアを算出する」
 // - 事業者に渡るのはティア（A/B/実績構築中）のみ。生の延滞回数・日数は渡さない
-// - 非開示は「ペナルティ」ではなく、リスク不明な相手に対する標準初期条件の適用
+// - 非開示は「ペナルティ」ではなく、標準条件（割引なし）の適用
 // - 開示した全員に何らかの改善があるよう設計する（開示インセンティブを二値にしない）
-import type { BankTransaction } from "./mock-bank";
-
-export const DEFAULT_DEPOSIT = 24000; // 標準初期条件 = 予想料金3ヶ月分の想定額
+// - リワードは電気料金の割引（原資は貸倒削減・督促コスト削減分）。保証金・審査は現代の
+//   電力契約には存在しないため前提にしない（v0.5で全面撤廃）
+import type { PaymentRecord } from "./mock-bank";
 
 export type Tier = "A" | "B" | "C" | "building";
 
 export const TIER_INFO: Record<
   Tier,
-  { label: string; deposit: number; rewardLabel: string; note: string }
+  { label: string; discountRate: number; rewardLabel: string; note: string }
 > = {
   A: {
     label: "Aランク",
-    deposit: 0,
-    rewardLabel: `保証金 ¥${DEFAULT_DEPOSIT.toLocaleString()} → ¥0（全額免除）+ 審査即通過`,
+    discountRate: 3,
+    rewardLabel: "電気料金 3%割引（開示特典・その場で適用）",
     note: "12ヶ月以上の支払い実績・重大な遅延なし",
   },
   B: {
     label: "Bランク",
-    deposit: DEFAULT_DEPOSIT / 2,
-    rewardLabel: `保証金 ¥${DEFAULT_DEPOSIT.toLocaleString()} → ¥${(
-      DEFAULT_DEPOSIT / 2
-    ).toLocaleString()}（半額）`,
-    note: "実績を確認。一部に遅延があるため保証金は半額適用",
+    discountRate: 1,
+    rewardLabel: "電気料金 1%割引",
+    note: "実績を確認。一部に遅延があるため割引率は1%を適用",
   },
   C: {
     label: "Cランク",
-    deposit: DEFAULT_DEPOSIT,
-    rewardLabel: "標準初期条件を適用",
-    note: "遅延が複数回確認されたため標準初期条件を適用",
+    discountRate: 0,
+    rewardLabel: "標準条件を適用（今後12ヶ月遅延がなければ割引対象）",
+    note: "遅延が複数回確認されたため標準条件を適用",
   },
   building: {
     label: "実績構築中",
-    deposit: 0,
-    rewardLabel: "実績構築プログラム適用 — 保証金¥0（口座振替登録が条件）",
+    discountRate: 0,
+    rewardLabel:
+      "ウェルカム特典 — 口座振替のご登録で初月1%割引。実績12ヶ月でAランクを自動判定",
     note: "履歴12ヶ月未満。12ヶ月の実績でAランクを自動判定",
   },
 };
@@ -50,15 +49,14 @@ export type ScoreResult = {
   maxDaysLate: number;
   tier: Tier;
   verified: boolean; // 何らかの実績を検証できたか
-  deposit: number; // 適用される保証金
+  discountRate: number; // 適用される電気料金の割引率（%）
   rewardLabel: string;
 };
 
-export function scorePayments(transactions: BankTransaction[]): ScoreResult {
-  const utility = transactions.filter((t) => t.isUtility);
-  const months = utility.length;
-  const late = utility.filter((t) => t.daysLate >= 30);
-  const maxDaysLate = Math.max(0, ...utility.map((t) => t.daysLate));
+export function scorePayments(payments: PaymentRecord[]): ScoreResult {
+  const months = payments.length;
+  const late = payments.filter((t) => t.daysLate >= 30);
+  const maxDaysLate = Math.max(0, ...payments.map((t) => t.daysLate));
 
   let tier: Tier;
   if (months < 12) {
@@ -74,12 +72,12 @@ export function scorePayments(transactions: BankTransaction[]): ScoreResult {
   const info = TIER_INFO[tier];
   return {
     months,
-    onTimeCount: utility.filter((t) => t.daysLate === 0).length,
+    onTimeCount: payments.filter((t) => t.daysLate === 0).length,
     lateCount: late.length,
     maxDaysLate,
     tier,
     verified: months > 0,
-    deposit: info.deposit,
+    discountRate: info.discountRate,
     rewardLabel: info.rewardLabel,
   };
 }

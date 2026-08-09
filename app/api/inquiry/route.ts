@@ -25,7 +25,7 @@ async function handler(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const score = scorePayments(persona.transactions);
+  const score = scorePayments(persona.payments);
   const jws = await issueCredential(persona.name, score);
   const { valid } = await verifyCredential(jws);
 
