@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   if (!persona) {
     return NextResponse.json({ error: "unknown persona" }, { status: 400 });
   }
-  const score = scorePayments(persona.transactions);
+  const score = scorePayments(persona.payments);
   const jws = await issueCredential(persona.name, score);
   return NextResponse.json({
     jws,

@@ -17,9 +17,9 @@ export default function Home() {
         </h1>
         <p className="text-muted-foreground max-w-xl leading-relaxed">
           電力業界には、クレカや通信のような支払い情報の共有機関がありません。
-          何年も期日内に払い続けた実績があっても、契約時にそれを証明する手段がない——
-          PayProofは、あなた自身が支払い履歴を開示することで、
-          保証金免除や審査即通過などの優遇をその場で受け取れる仕組みです。
+          何年も期日内に払い続けた実績があっても、乗り換えるとゼロリセット——
+          PayProofは、前の電力会社での支払い実績をあなた自身の同意で開示することで、
+          電気料金の割引（最大3%）をその場で受け取れる仕組みです。
         </p>
         <Button size="lg" render={<Link href="/apply" />}>
           電力契約デモをはじめる →
@@ -40,7 +40,7 @@ export default function Home() {
             <CardTitle className="text-base">2. 実績を検証</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            銀行明細から公共料金の支払い実績を自動抽出。自己申告ではなく、検証済みの事実だけを使います。
+            本人同意のもと、前の電力会社が保有する支払い履歴を照会・検証。自己申告ではなく、検証済みの事実だけを使います。
           </CardContent>
         </Card>
         <Card>
@@ -48,13 +48,13 @@ export default function Home() {
             <CardTitle className="text-base">3. その場でリワード</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            実績に応じて保証金（3ヶ月分・数万円）の免除・減額や審査即通過が即時適用。履歴が短い方も実績構築プログラムの対象です。
+            実績に応じて電気料金の割引（最大3%）がその場で適用。履歴が短い方も実績構築プログラムの対象です。
           </CardContent>
         </Card>
       </section>
 
       <p className="text-center text-xs text-muted-foreground font-mono">
-        demo build — 銀行連携はモックデータで再現しています ／{" "}
+        demo build — 電力会社間の照会はモックデータで再現しています ／{" "}
         <Link href="/dashboard" className="underline underline-offset-2">
           電力会社側ダッシュボードを見る
         </Link>

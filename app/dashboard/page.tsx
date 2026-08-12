@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { SectionPanel } from "@/components/section-panel";
 import { personas } from "@/lib/mock-bank";
-import { scorePayments, TIER_INFO, DEFAULT_DEPOSIT } from "@/lib/scoring";
+import { scorePayments, TIER_INFO } from "@/lib/scoring";
 import { issueCredential, verifyCredential } from "@/lib/credential";
 import { InquiryDemo } from "@/components/inquiry-demo";
 
@@ -30,7 +30,7 @@ import { InquiryDemo } from "@/components/inquiry-demo";
 export default async function DashboardPage() {
   const disclosed = await Promise.all(
     personas.map(async (p) => {
-      const score = scorePayments(p.transactions);
+      const score = scorePayments(p.payments);
       // デモ: 発行済み証明をサーバー側で署名検証して表示
       const jws = await issueCredential(p.name, score);
       const { valid } = await verifyCredential(jws);
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
               <TableHead>開示</TableHead>
               <TableHead>与信ティア</TableHead>
               <TableHead>証明</TableHead>
-              <TableHead className="text-right">初期条件（保証金）</TableHead>
+              <TableHead className="text-right">適用条件（割引）</TableHead>
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
@@ -139,7 +139,7 @@ export default async function DashboardPage() {
                       {persona.name}
                     </span>
                     <span className="block text-xs text-muted-foreground">
-                      {persona.bank} 連携
+                      {persona.prevProvider} から照会
                     </span>
                   </TableCell>
                   <TableCell>
@@ -172,10 +172,14 @@ export default async function DashboardPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono text-sm">
-                    {score.deposit === 0 ? (
-                      <span className="text-primary">¥0（免除）</span>
+                    {score.discountRate > 0 ? (
+                      <span className="text-primary">
+                        {score.discountRate}%割引
+                      </span>
+                    ) : score.tier === "building" ? (
+                      <span className="text-primary">ウェルカム特典</span>
                     ) : (
-                      <>¥{score.deposit.toLocaleString()}</>
+                      <>標準条件</>
                     )}
                   </TableCell>
                   <TableCell>
@@ -205,9 +209,9 @@ export default async function DashboardPage() {
                 <span className="text-sm text-muted-foreground">—</span>
               </TableCell>
               <TableCell className="text-right font-mono text-sm">
-                ¥{DEFAULT_DEPOSIT.toLocaleString()}
+                標準条件（割引なし）
                 <span className="block text-xs text-muted-foreground">
-                  標準初期条件
+                  督促優先度: 通常
                 </span>
               </TableCell>
               <TableCell>
@@ -225,24 +229,26 @@ export default async function DashboardPage() {
         bodyClassName="flex flex-col gap-2 p-4 text-sm text-muted-foreground"
       >
         <p>
-          ・開示者の与信ティアは、本人の銀行明細から検証され、発行者の署名付き証明（JWS）として提示されます。事業者が受け取るのはティアのみで、明細や遅延の詳細は本人の元に残ります。
+          ・開示者の与信ティアは、本人同意に基づき前の電力会社から照会した支払い履歴（相互参照）から検証され、発行者の署名付き証明（JWS）として提示されます。事業者が受け取るのはティアのみで、遅延の詳細は本人の元に残ります。
         </p>
         <p>
-          ・保証金はペナルティではなく、
+          ・非開示はペナルティではなく、
           <span className="text-foreground">
-            実績を確認できない相手に対する標準初期条件
+            実績を確認できない相手に対する標準条件（割引なし）
           </span>
-          です。開示すれば全員に条件改善の可能性があり（免除・半額・実績構築プログラム）、
-          結果として開示が合理的な選択になります。
+          の適用です。開示すれば全員に条件改善の可能性があり（3%割引・1%割引・ウェルカム特典）、
+          結果として開示が合理的な選択になります。割引原資は貸倒・督促コストの削減分です。
         </p>
         <p>
           ・履歴が12ヶ月に満たない方（新社会人・引っ越し直後など）は「実績構築中」として扱われ、
-          保証金なしで契約できます。履歴が薄いことは落ち度ではありません。
+          ウェルカム特典の対象になります。履歴が薄いことは落ち度ではありません。
         </p>
         <p className="pt-2 font-mono text-xs">
-          ・照会課金レール: 証明1件の照会ごとに $0.01。決済手段は差し替え可能で、
-          現在はx402（HTTP 402マイクロペイメント）で実装。照会料の30%は貸倒削減分を原資として
-          データ主であるユーザーへ還元。上の「照会デモ」で体験できます。
+          ・照会課金レール: 証明1件の照会ごとに 1 JPYC（円建てステーブルコイン）。
+          x402（HTTP 402マイクロペイメント）で実装し、照会料の30%（0.3
+          JPYC）をデータ主であるユーザーへ即時着金。狙いは収入ではなく、
+          「いつ・誰に照会されたか」が本人に届く通知・監査レシートとしての設計です。
+          上の「照会デモ」で体験できます。
         </p>
       </SectionPanel>
     </main>
