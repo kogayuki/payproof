@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PayProof — 支払い実績が、あなたの信用になる",
   description:
-    "支払い履歴をワンタップで開示して、保証金免除などのリワードを受け取る。開示リワード型の電力与信プラットフォーム。",
+    "前の電力会社での支払い実績をワンタップで開示して、電気料金の割引（最大3%）をその場で受け取る。開示リワード型の電力与信プラットフォーム。",
 };
 
 export default function RootLayout({
