@@ -18,7 +18,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { personas, type Persona } from "@/lib/mock-bank";
-import { scorePayments, TIER_INFO, type ScoreResult } from "@/lib/scoring";
+import {
+  scorePayments,
+  TIER_INFO,
+  type ScoreResult,
+  type Tier,
+} from "@/lib/scoring";
 
 type Step = "form" | "consent" | "connect" | "verifying" | "result";
 
@@ -446,9 +451,32 @@ function ScoreDetail({ score }: { score: ScoreResult }) {
   );
 }
 
+type DecodedCredential = {
+  tier: Tier;
+  months: number;
+  verified: boolean;
+  sub: string;
+  iss: string;
+  exp: number;
+};
+
+function decodeJwsPayload(jws: string): DecodedCredential | null {
+  try {
+    const base64 = jws.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(
+      new TextDecoder().decode(
+        Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      )
+    );
+  } catch {
+    return null;
+  }
+}
+
 function CredentialBlock({ personaId }: { personaId: string }) {
   const [jws, setJws] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -482,9 +510,59 @@ function CredentialBlock({ personaId }: { personaId: string }) {
       </p>
       {jws ? (
         <>
-          <p className="font-mono text-xs break-all text-muted-foreground bg-muted rounded p-2 max-h-20 overflow-hidden">
-            {jws}
-          </p>
+          {(() => {
+            const claims = decodeJwsPayload(jws);
+            if (!claims) return null;
+            const rows: [string, string][] = [
+              ["判定ティア", TIER_INFO[claims.tier]?.label ?? claims.tier],
+              ["検証済み実績", `${claims.months}ヶ月`],
+              ["発行者", "PayProof"],
+              [
+                "有効期限",
+                new Date(claims.exp * 1000).toLocaleDateString("ja-JP"),
+              ],
+            ];
+            return (
+              <div className="rounded border border-border">
+                <p className="border-b border-border bg-muted/40 px-3 py-2 text-xs font-medium">
+                  この証明に含まれる情報（これがすべてです）
+                </p>
+                <dl>
+                  {rows.map(([k, v], i) => (
+                    <div
+                      key={k}
+                      className={`flex border-b border-border text-sm last:border-b-0 ${
+                        i % 2 === 1 ? "bg-muted/40" : ""
+                      }`}
+                    >
+                      <dt className="w-36 shrink-0 px-3 py-2 text-muted-foreground">
+                        {k}
+                      </dt>
+                      <dd className="px-3 py-2 font-mono font-medium">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+                  含まれない情報:
+                  支払い金額・遅延の詳細・口座情報。生データはご本人の元に残ります。
+                </p>
+              </div>
+            );
+          })()}
+          <button
+            type="button"
+            className="self-start text-xs text-primary hover:underline"
+            onClick={() => setShowRaw((v) => !v)}
+          >
+            {showRaw
+              ? "技術詳細を隠す"
+              : "技術詳細を表示（署名付きデータの実体）"}
+          </button>
+          {showRaw && (
+            <p className="font-mono text-xs break-all text-muted-foreground bg-muted rounded p-2">
+              {jws}
+            </p>
+          )}
           <Button
             variant="outline"
             size="sm"
